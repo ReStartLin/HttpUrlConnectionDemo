@@ -1,8 +1,14 @@
 package restart.com.httpurlconnectiondemo;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.TextView;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -12,12 +18,29 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 public class DetailActivity extends AppCompatActivity {
-
+    private TextView nameView,authorView,contentView;
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            Essay e = (Essay) msg.obj;
+            nameView.setText(e.getTitle());
+            authorView.setText(e.getAuthor());
+            contentView.setText(e.getContent());
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
+        initView();
         initData();//初始化数据
+    }
+
+    private void initView() {
+        nameView = findViewById(R.id.name);
+        authorView = findViewById(R.id.author);
+        contentView = findViewById(R.id.content);
     }
 
     private void initData() {
@@ -58,12 +81,28 @@ public class DetailActivity extends AppCompatActivity {
                         }
                         String msg = baos.toString();
                         Log.i("TAG", "run: "+ msg);
+                        //JSON数据的解析
+                        JSONObject obj = new JSONObject(msg);
+                        int status = obj.getInt("status");
+                        String msg2 = obj.getString("msg");
+                        Log.i("TAG", "run: "+status+"   "+msg2);
+                        JSONObject data = obj.getJSONObject("data");
+                        String title = data.getString("title");
+                        String author = data.getString("author");
+                        String content = data.getString("content");
+                        Log.i("TAG", "run: 标题："+title+",作者："+author+", 内容："+content);
+                        //将操作交还给主线程
+                        Message message = handler.obtainMessage();
+                        message.obj = new Essay(title,author,content);
+                        handler.sendMessage(message);
 
                     }
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
